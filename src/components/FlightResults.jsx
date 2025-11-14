@@ -263,7 +263,7 @@ const FlightResults = ({ flights, context, currentPage, searchParams, onSearchRe
                   {formatPrice(flight.price.amount, flight.price.currency)}
                 </Typography>
                 <Typography sx={{ fontSize: '13px', color: '#9aa0a6', mb: 1 }}>
-                  round trip
+                  {flight.tripType === 'roundtrip' ? 'round trip' : 'one way'}
                 </Typography>
               </Box>
 
@@ -288,13 +288,121 @@ const FlightResults = ({ flights, context, currentPage, searchParams, onSearchRe
                   backgroundColor: '#202124',
                 }}
               >
-                <Box sx={{ display: 'flex', gap: 4, mb: 3 }}>
+                <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
+                  <Box
+                    component="img"
+                    src={leg.airline.logo}
+                    alt={leg.airline.name}
+                    sx={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: '50%',
+                      backgroundColor: '#fff',
+                      p: 0.5,
+                      objectFit: 'contain',
+                    }}
+                  />
                   <Box sx={{ flex: 1 }}>
+                    <Typography
+                      sx={{
+                        fontSize: '16px',
+                        fontWeight: 500,
+                        color: '#e8eaed',
+                        mb: 3,
+                      }}
+                    >
+                      {flight.tripType === 'roundtrip' ? 'Outbound' : 'Departure'} · {formatDate(leg.departure)}
+                    </Typography>
+
+                    <Box sx={{ position: 'relative', pl: 4 }}>
+                      <Box
+                        sx={{
+                          position: 'absolute',
+                          left: 0,
+                          top: 8,
+                          bottom: 8,
+                          width: 2,
+                          backgroundColor: 'rgba(255, 255, 255, 0.12)',
+                        }}
+                      />
+
+                      <Box sx={{ mb: 3 }}>
+                        <Box
+                          sx={{
+                            position: 'absolute',
+                            left: -4,
+                            width: 10,
+                            height: 10,
+                            borderRadius: '50%',
+                            border: '2px solid #9aa0a6',
+                            backgroundColor: '#202124',
+                          }}
+                        />
+                        <Typography
+                          sx={{
+                            fontSize: '14px',
+                            fontWeight: 500,
+                            color: '#e8eaed',
+                            mb: 0.5,
+                          }}
+                        >
+                          {formatTime(leg.departure)} · {leg.origin.name} ({leg.origin.id})
+                        </Typography>
+                      </Box>
+
+                      <Box sx={{ my: 2, ml: 2 }}>
+                        <Typography sx={{ fontSize: '13px', color: '#9aa0a6', mb: 0.5 }}>
+                          Travel time: {leg.duration}
+                        </Typography>
+                      </Box>
+
+                      <Box>
+                        <Box
+                          sx={{
+                            position: 'absolute',
+                            left: -4,
+                            width: 10,
+                            height: 10,
+                            borderRadius: '50%',
+                            border: '2px solid #9aa0a6',
+                            backgroundColor: '#202124',
+                          }}
+                        />
+                        <Typography
+                          sx={{
+                            fontSize: '14px',
+                            fontWeight: 500,
+                            color: '#e8eaed',
+                            mb: 0.5,
+                          }}
+                        >
+                          {formatTime(leg.arrival)} · {leg.destination.name} ({leg.destination.id})
+                        </Typography>
+                      </Box>
+                    </Box>
+
+                    <Box
+                      sx={{
+                        mt: 3,
+                        pt: 2,
+                        borderTop: '1px solid rgba(255, 255, 255, 0.12)',
+                      }}
+                    >
+                      <Typography sx={{ fontSize: '13px', color: '#9aa0a6' }}>
+                        {leg.airline.name} · Economy · {leg.aircraft} · {leg.aircraft?.split(' ')[1] || '9P 500'}
+                      </Typography>
+                    </Box>
+                  </Box>
+                </Box>
+
+                {flight.tripType === 'roundtrip' && flight.returnFlight && flight.returnFlight.legs[0] && (
+                  <>
+                    <Box sx={{ my: 4, borderTop: '1px solid rgba(255, 255, 255, 0.12)' }} />
                     <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
                       <Box
                         component="img"
-                        src={leg.airline.logo}
-                        alt={leg.airline.name}
+                        src={flight.returnFlight.legs[0].airline.logo}
+                        alt={flight.returnFlight.legs[0].airline.name}
                         sx={{
                           width: 32,
                           height: 32,
@@ -313,7 +421,7 @@ const FlightResults = ({ flights, context, currentPage, searchParams, onSearchRe
                             mb: 3,
                           }}
                         >
-                          Departure · {formatDate(leg.departure)}
+                          Return · {formatDate(flight.returnFlight.legs[0].departure)}
                         </Typography>
 
                         <Box sx={{ position: 'relative', pl: 4 }}>
@@ -348,13 +456,13 @@ const FlightResults = ({ flights, context, currentPage, searchParams, onSearchRe
                                 mb: 0.5,
                               }}
                             >
-                              {formatTime(leg.departure)} · {leg.origin.name} ({leg.origin.id})
+                              {formatTime(flight.returnFlight.legs[0].departure)} · {flight.returnFlight.legs[0].origin.name} ({flight.returnFlight.legs[0].origin.id})
                             </Typography>
                           </Box>
 
                           <Box sx={{ my: 2, ml: 2 }}>
                             <Typography sx={{ fontSize: '13px', color: '#9aa0a6', mb: 0.5 }}>
-                              Travel time: {leg.duration}
+                              Travel time: {flight.returnFlight.legs[0].duration}
                             </Typography>
                           </Box>
 
@@ -378,7 +486,7 @@ const FlightResults = ({ flights, context, currentPage, searchParams, onSearchRe
                                 mb: 0.5,
                               }}
                             >
-                              {formatTime(leg.arrival)} · {leg.destination.name} ({leg.destination.id})
+                              {formatTime(flight.returnFlight.legs[0].arrival)} · {flight.returnFlight.legs[0].destination.name} ({flight.returnFlight.legs[0].destination.id})
                             </Typography>
                           </Box>
                         </Box>
@@ -391,44 +499,67 @@ const FlightResults = ({ flights, context, currentPage, searchParams, onSearchRe
                           }}
                         >
                           <Typography sx={{ fontSize: '13px', color: '#9aa0a6' }}>
-                            {leg.airline.name} · Economy · {leg.aircraft} · {leg.aircraft?.split(' ')[1] || '9P 500'}
+                            {flight.returnFlight.legs[0].airline.name} · Economy · {flight.returnFlight.legs[0].aircraft} · {flight.returnFlight.legs[0].aircraft?.split(' ')[1] || '9P 500'}
                           </Typography>
                         </Box>
                       </Box>
                     </Box>
+                  </>
+                )}
+
+                <Box sx={{ mt: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Box
+                    sx={{
+                      p: 2,
+                      backgroundColor: '#303134',
+                      borderRadius: 2,
+                      flex: 1,
+                      mr: 2,
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                      <NatureIcon sx={{ fontSize: 18, color: '#9aa0a6' }} />
+                      <Typography sx={{ fontSize: '13px', color: '#e8eaed' }}>
+                        Emissions estimate: {leg.emissions.amount} {leg.emissions.unit}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <FlightIcon sx={{ fontSize: 18, color: '#9aa0a6' }} />
+                      <Typography sx={{ fontSize: '13px', color: '#e8eaed' }}>
+                        Contrail warming potential: Low
+                      </Typography>
+                      <InfoOutlinedIcon sx={{ fontSize: 14, color: '#9aa0a6' }} />
+                    </Box>
                   </Box>
 
-                  <Box sx={{ minWidth: 300 }}>
-                    <Box
-                      sx={{
-                        p: 2,
-                        backgroundColor: '#303134',
-                        borderRadius: 2,
-                        mb: 2,
-                      }}
-                    >
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                        <NatureIcon sx={{ fontSize: 18, color: '#9aa0a6' }} />
-                        <Typography sx={{ fontSize: '13px', color: '#e8eaed' }}>
-                          Emissions estimate: {leg.emissions.amount} {leg.emissions.unit}
-                        </Typography>
-                      </Box>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <FlightIcon sx={{ fontSize: 18, color: '#9aa0a6' }} />
-                        <Typography sx={{ fontSize: '13px', color: '#e8eaed' }}>
-                          Contrail warming potential: Low
-                        </Typography>
-                        <InfoOutlinedIcon sx={{ fontSize: 14, color: '#9aa0a6' }} />
-                      </Box>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
+                    <Box sx={{ textAlign: 'right' }}>
+                      <Typography
+                        sx={{
+                          fontSize: '18px',
+                          fontWeight: 500,
+                          color: '#e8eaed',
+                        }}
+                      >
+                        {formatPrice(flight.price.amount, flight.price.currency)}
+                      </Typography>
+                      <Typography
+                        sx={{
+                          fontSize: '13px',
+                          color: '#9aa0a6',
+                        }}
+                      >
+                        {flight.tripType === 'roundtrip' ? 'round trip' : 'one way'}
+                      </Typography>
                     </Box>
 
                     <Button
                       variant="contained"
-                      fullWidth
                       sx={{
                         backgroundColor: '#8ab4f8',
                         color: '#202124',
                         py: 1.5,
+                        px: 4,
                         fontSize: '14px',
                         fontWeight: 500,
                         textTransform: 'none',
@@ -440,27 +571,6 @@ const FlightResults = ({ flights, context, currentPage, searchParams, onSearchRe
                     >
                       Select flight
                     </Button>
-
-                    <Typography
-                      sx={{
-                        fontSize: '18px',
-                        fontWeight: 500,
-                        color: '#e8eaed',
-                        textAlign: 'right',
-                        mt: 2,
-                      }}
-                    >
-                      {formatPrice(flight.price.amount, flight.price.currency)}
-                    </Typography>
-                    <Typography
-                      sx={{
-                        fontSize: '13px',
-                        color: '#9aa0a6',
-                        textAlign: 'right',
-                      }}
-                    >
-                      round trip
-                    </Typography>
                   </Box>
                 </Box>
               </Box>

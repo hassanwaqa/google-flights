@@ -1,6 +1,5 @@
 import { mockFlightsData } from './flights.js';
 
-// Helper function to get date range (date + next 2 days)
 const getDateRange = (dateStr) => {
   const date = new Date(dateStr);
   const dates = [];
@@ -18,37 +17,94 @@ export const filterFlights = (searchParams) => {
   const departureDates = getDateRange(searchParams.date);
   const returnDates = searchParams.returnDate ? getDateRange(searchParams.returnDate) : null;
   
-  // Filter outbound flights (departure)
-  let filtered = mockFlightsData.filter(flight => {
+  const minPrice = searchParams.minPrice || 0;
+  const maxPrice = searchParams.maxPrice || 10000;
+  const tripType = searchParams.tripType || 'roundtrip';
+  
+  let outboundFlights = mockFlightsData.filter(flight => {
     const matchesOrigin = flight.originSkyId === searchParams.originSkyId;
     const matchesDestination = flight.destinationSkyId === searchParams.destinationSkyId;
     const matchesDate = departureDates.includes(flight.date);
-    
-    const minPrice = searchParams.minPrice || 0;
-    const maxPrice = searchParams.maxPrice || 10000;
     const matchesPrice = flight.price.amount >= minPrice && flight.price.amount <= maxPrice;
     
     return matchesOrigin && matchesDestination && matchesDate && matchesPrice;
   });
   
-  // If returnDate is provided, also check if return flights exist
-  if (returnDates) {
-    filtered = filtered.filter(() => {
-      // Check if there's a return flight available (reverse route)
-      const hasReturnFlight = mockFlightsData.some(returnFlight => {
-        return returnFlight.originSkyId === searchParams.destinationSkyId &&
-               returnFlight.destinationSkyId === searchParams.originSkyId &&
-               returnDates.includes(returnFlight.date);
+  let filtered = [];
+  
+  if (tripType === 'oneway') {
+    filtered = outboundFlights.map(flight => ({
+      ...flight,
+      tripType: 'oneway'
+    }));
+  } 
+  else if (tripType === 'roundtrip' && returnDates) {
+    const returnFlights = mockFlightsData.filter(flight => {
+      const matchesOrigin = flight.originSkyId === searchParams.destinationSkyId;
+      const matchesDestination = flight.destinationSkyId === searchParams.originSkyId;
+      const matchesDate = returnDates.includes(flight.date);
+      const matchesPrice = flight.price.amount >= minPrice && flight.price.amount <= maxPrice;
+      
+      return matchesOrigin && matchesDestination && matchesDate && matchesPrice;
+    });
+    
+    const paired = new Set();
+    const pairedReturnFlights = new Set();
+    
+    outboundFlights.forEach(outbound => {
+      const airlineName = outbound.legs[0]?.airline?.name;
+      if (!airlineName) return;
+      
+      const matchingReturn = returnFlights.find((returnFlight, index) => {
+        if (pairedReturnFlights.has(index)) return false;
+        const returnAirline = returnFlight.legs[0]?.airline?.name;
+        return returnAirline === airlineName;
       });
       
-      return hasReturnFlight;
+      if (matchingReturn) {
+        const returnIndex = returnFlights.indexOf(matchingReturn);
+        pairedReturnFlights.add(returnIndex);
+        paired.add(outbound.id);
+        
+        filtered.push({
+          ...outbound,
+          tripType: 'roundtrip',
+          returnFlight: matchingReturn,
+          price: {
+            amount: outbound.price.amount + matchingReturn.price.amount,
+            currency: outbound.price.currency
+          }
+        });
+      }
     });
+    
+    outboundFlights.forEach(outbound => {
+      if (!paired.has(outbound.id)) {
+        filtered.push({
+          ...outbound,
+          tripType: 'oneway'
+        });
+      }
+    });
+    
+    returnFlights.forEach((returnFlight, index) => {
+      if (!pairedReturnFlights.has(index)) {
+        filtered.push({
+          ...returnFlight,
+          tripType: 'oneway'
+        });
+      }
+    });
+  } 
+  else {
+    filtered = outboundFlights.map(flight => ({
+      ...flight,
+      tripType: 'oneway'
+    }));
   }
   
-  // Sort by date (ascending - earliest date first)
   filtered.sort((a, b) => new Date(a.date) - new Date(b.date));
 
-  // Pagination
   const page = parseInt(searchParams.page) || 1;
   const pageSize = parseInt(searchParams.pageSize) || 3;
   const startIndex = (page - 1) * pageSize;

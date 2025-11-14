@@ -33,6 +33,7 @@ export const searchFlights = async (searchParams) => {
       originEntityId: searchParams.originEntityId,
       destinationEntityId: searchParams.destinationEntityId,
       date: searchParams.date,
+      tripType: searchParams.tripType || 'roundtrip',
       cabinClass: searchParams.cabinClass || 'economy',
       adults: searchParams.adults || 1,
       sortBy: searchParams.sortBy || 'best',
